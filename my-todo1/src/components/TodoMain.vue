@@ -1,6 +1,18 @@
 <template>
     <div class="page">
-        <header><h1>Vue Fire todo1</h1></header>
+        <header><h1>Vue Fire todo1
+            <span class="pie">
+                <svg viewBox="0 0 64 64">
+                <circle class="pie" r="32" cx="32" cy="32" style="stroke-width: 64;"></circle>
+                <circle class="slice" r="32" cx="32" cy="32" 
+                    :style="{ 
+                        strokeWidth: 64,
+                        strokeDasharray: totalTodo + ', 201',
+                        transition: 'all 0.3s linear'
+                    }"></circle>
+                </svg>
+            </span>
+        </h1></header>
         <main>
             <div class="todos">
                 <transition name="fade">
@@ -54,12 +66,24 @@
                 todos:[]
             }
         },
+        computed:{
+            totalTodo(){
+                let totalNum = 0;
+                this.todos.forEach((item) => {
+                    if(item.state === 'done'){
+                        totalNum++
+                    }
+                })
+                return (totalNum / this.todos.length) * 201
+            }
+        },
         methods: {
             addItem(){
                 if (this.addItemText === "") return;
                 db.collection('todos').add({
                     text: this.addItemText, 
-                    state: 'yet'
+                    state: 'yet',
+                    createdAt: new Date(),
                 }).then(sn => {
                     db.collection('todos').doc(sn.id).update({
                         id: sn.id
@@ -73,9 +97,11 @@
             },
             checkItem(i) {
                 if (this.todos[i].state === 'yet') {
-                    this.todos[i].state = 'done'
+                    // this.todos[i].state = 'done'     // 로컬
+                    db.collection('todos').doc(this.todos[i].id).update({state:'done'}) // 서버
                 }else {
-                    this.todos[i].state = 'yet'
+                    // this.todos[i].state = 'yet'
+                    db.collection('todos').doc(this.todos[i].id).update({state:'yet'}) // 서버
                 }
             },
             editShow(index){
@@ -102,16 +128,16 @@
             }
         },
         mounted(){
-            this.$refs.writeArea.focus()
-            db.collection('todos').get().then((result) => {
-            result.forEach((doc)=>{
-                console.log(doc.data())
-                this.todos.push(doc.data());
-            })
-});
+            // this.$refs.writeArea.focus()
+            // db.collection('todos').get().then((result) => {
+            // result.forEach((doc)=>{
+            //     console.log(doc.data())
+            //     this.todos.push(doc.data());
+            // })
+            // });
         },
         firestore: {
-            todos: db.collection('todos')   // todos <- 데이터베이스에 사용하는이름과 같아야함 
+            todos: db.collection('todos').orderBy('createdAt', 'desc')  // todos <- 데이터베이스에 사용하는이름과 같아야함 
         }
     }
   
